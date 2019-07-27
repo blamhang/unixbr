@@ -53,6 +53,7 @@ mkdir $HOSTNAME/FS
 mkdir $HOSTNAME/FS/boot
 cp /boot/config-* $HOSTNAME/FS/boot 2> /dev/null
 cp -r /boot/grub/ $HOSTNAME/FS/boot 2> /dev/null
+cp -r /boot/grub2/ $HOSTNAME/FS/boot 2> /dev/null
 echo "/boot/: Done"
 
 # /etc/*
@@ -68,7 +69,7 @@ else
    cp -r /etc/apache/ /etc/apache2/ /etc/httpd/ /etc/php*/ $HOSTNAME/FS/etc 2> /dev/null
    cp -r /etc/mail /etc/sendmail /etc/ucblib/ /etc/ucbmail/ $HOSTNAME/FS/etc 2> /dev/null
    cp -r /etc/openldap /etc/samba/ /etc/snmp/ /etc/ssh/ $HOSTNAME/FS/etc 2> /dev/null
-   cp -r /etc/audit/ /etc/selinux/ /etc/sysconfig/ /etc/syslog-ng/ $HOSTNAME/FS/etc 2> /dev/null
+   cp -r /etc/audit/ /etc/selinux/ /etc/sysconfig/ /etc/syslog-ng/ /etc/systemd/ $HOSTNAME/FS/etc 2> /dev/null
    cp -r /etc/adm/ /etc/cups/ /etc/runlevels/ /etc/skel/ $HOSTNAME/FS/etc 2> /dev/null
    cp -r /etc/dfs/ /etc/ftpd/ /etc/ipf/ $HOSTNAME/FS/etc 2> /dev/null
    cp -r /etc/init.d/ /etc/pam.d/ /etc/rc.d/ /etc/rc*.d/ /etc/sudoers.d/ $HOSTNAME/FS/etc 2> /dev/null
@@ -121,6 +122,12 @@ then
    cp /usr/dt/config/Xaccess $HOSTNAME/FS/usr/dt/config 2> /dev/null
    echo "/usr/: Done"
 fi
+if [ -d /usr/share/X11/ ]
+then
+   mkdir -p $HOSTNAME/FS/usr/share/X11
+   cp /usr/share/X11/* $HOSTNAME/FS/usr/share/X11 2> /dev/null
+fi
+echo "/usr/: Done"
 
 # /var/*
 mkdir $HOSTNAME/FS/var
@@ -184,7 +191,7 @@ do
 done
 
 # Conf Files (/etc/*.conf)
-for name in chttp httpd inetd ld.so ldap lighttpd lilo "modprobe" my named netsvc nis nsswitch ntp pam proxychains resolv rsyslog slapd smb snmpd sysctl syslog syslog-ng xinetd yp
+for name in chrony chttp httpd inetd ld.so ldap lighttpd lilo "modprobe" my named netsvc nis nsswitch ntp pam proftpd proxychains resolv rsyslog slapd smb snmpd sysctl syslog syslog-ng xinetd yp yum
 do
    if [ -f /etc/$name.conf ]; then
       cp /etc/$name.conf $HOSTNAME/FS/etc/$name.conf 2> /dev/null
@@ -297,6 +304,9 @@ echo "====================================================================="
 mkdir $HOSTNAME/CMD
 
 ## Generic UNIX
+apt-cache policy 1> $HOSTNAME/CMD/apt-cache_policy  2> /dev/null
+apt-get -s upgrade 1> $HOSTNAME/CMD/apt-get-s_upgrade  2> /dev/null
+apt-key list 1> $HOSTNAME/CMD/apt-key_list  2> /dev/null
 arp -a 1> $HOSTNAME/CMD/arp-a  2> /dev/null
 arp -an 1> $HOSTNAME/CMD/arp-an  2> /dev/null
 arp -e 1> $HOSTNAME/CMD/arp-e  2> /dev/null
@@ -314,14 +324,18 @@ dmidecode 1> $HOSTNAME/CMD/dmidecode  2> /dev/null
 dnsdomainname 1> $HOSTNAME/CMD/dnsdomainname  2> /dev/null
 dpkg --list 1> $HOSTNAME/CMD/dpkg-list  2> /dev/null
 dpkg -l 1> $HOSTNAME/CMD/patchlist-dpkg  2> /dev/null
+dpkg -s aide 1> $HOSTNAME/CMD/dpkg-s_aide  2> /dev/null
 env 1> $HOSTNAME/CMD/env  2> /dev/null
+export 1> $HOSTNAME/CMD/export  2> /dev/null
 free -om 1> $HOSTNAME/CMD/free-om  2> /dev/null
 getconf 1>  $HOSTNAME/CMD/getconf  2> /dev/null
 getconf -a 1>  $HOSTNAME/CMD/getconf-a  2> /dev/null
 groups 1>  $HOSTNAME/CMD/groups  2> /dev/null
 grpck 1> $HOSTNAME/CMD/grpck  2> /dev/null
+history 1> $HOSTNAME/CMD/history  2> /dev/null
 ifconfig -a 1> $HOSTNAME/CMD/ifconfig-a  2> /dev/null
 ip addr 1> $HOSTNAME/CMD/ip_addr  2> /dev/null
+ip route 1> $HOSTNAME/CMD/ip_route  2> /dev/null
 ipcs -a 1> $HOSTNAME/CMD/ipcs-a  2> /dev/null  # IPC Facilities
 iptables -L -v -n 1> $HOSTNAME/CMD/iptables-L  2> /dev/null
 ip6tables -L -v -n 1> $HOSTNAME/CMD/ip6tables-L  2> /dev/null
@@ -350,9 +364,11 @@ ping -c 5 www.google.co.uk 1> $HOSTNAME/CMD/ping-google  2> /dev/null
 ping -c 5 8.8.8.8 1> $HOSTNAME/CMD/ping-8.8.8.8  2> /dev/null
 raw -qa 1> $HOSTNAME/CMD/raw-qa  2> /dev/null
 rpcinfo -p 1> $HOSTNAME/CMD/rpcinfo-p  2> /dev/null
+rpm -q aide 1> $HOSTNAME/CMD/rpm-q_aide  2> /dev/null
 rpm -q kernel 1> $HOSTNAME/CMD/rpm-q_kernel  2> /dev/null
 rpm -qa 1> $HOSTNAME/CMD/rpm-qa  2> /dev/null
 rpm -qa --qf '%{NAME}-%{VERSION}-%{RELEASE}|%{EPOCH}\n' 1> $HOSTNAME/CMD/patchlist-rpm  2> /dev/null
+rpm -q gpg-pubkey --qf '%{name}-%{version}-%{release} --> %{summary}\n' 1> $HOSTNAME/CMD/rpm-q_gpg-pubkey  2> /dev/null
 set 1> $HOSTNAME/CMD/set  2> /dev/null
 proxychains ifconfig 1> $HOSTNAME/CMD/proxychains-ifconfig  2> /dev/null
 ps aux 1> $HOSTNAME/CMD/ps-aux  2> /dev/null
@@ -366,6 +382,9 @@ route -nee 1> $HOSTNAME/CMD/route-nee  2> /dev/null
 selinux -v 1> $HOSTNAME/CMD/selinux-v  2> /dev/null
 service --status-all 1> $HOSTNAME/CMD/sestatus-v  2> /dev/null
 sestatus -v 1> $HOSTNAME/CMD/sestatus-v  2> /dev/null
+ss 1> $HOSTNAME/CMD/ss  2> /dev/null
+ss -4tuln 1> $HOSTNAME/CMD/ss-4tuln  2> /dev/null
+ss -6tuln 1> $HOSTNAME/CMD/ss-6tuln  2> /dev/null
 sshd -T 1> $HOSTNAME/CMD/sshd-T  2> /dev/null
 sudo -l 1> $HOSTNAME/CMD/sudo-l  2> /dev/null
 sudo -V 1> $HOSTNAME/CMD/sudo-V  2> /dev/null
@@ -374,10 +393,17 @@ sysctl -a 1>  $HOSTNAME/CMD/sysctl-a  2> /dev/null
 sysctl kernel 1> $HOSTNAME/CMD/sysctl-kernel  2> /dev/null
 sysctl kernel.modules_disabled 1> $HOSTNAME/CMD/sysctl-kernel1  2> /dev/null
 sysctl kernel.randomize_va_space >> $HOSTNAME/CMD/sysctl-kernel1  2> /dev/null
+systemctl --no-pager 1> $HOSTNAME/CMD/systemctl  2> /dev/null
+systemctl --no-pager -a 1> $HOSTNAME/CMD/systemctl -a  2> /dev/null
+systemctl is-enabled aidcheck.service 1> $HOSTNAME/CMD/systemctl_aidcheck  2> /dev/null
+systemctl status aidcheck.service >> $HOSTNAME/CMD/systemctl_aidcheck  2> /dev/null
+systemctl is-enabled aidcheck.timer >> $HOSTNAME/CMD/systemctl_aidcheck  2> /dev/null
+systemctl status aidcheck.timer >> $HOSTNAME/CMD/systemctl_aidcheck  2> /dev/null
 ulimit -a 1> $HOSTNAME/CMD/ulimit-a  2> /dev/null
 umask 1> $HOSTNAME/CMD/umask  2> /dev/null
 uname -a 1> $HOSTNAME/CMD/uname-a  2> /dev/null
 uname -mrs 1> $HOSTNAME/CMD/uname-mrs  2> /dev/null
+# useradd -D 1> $HOSTNAME/CMD/useradd-D  2> /dev/null
 uptime 1> $HOSTNAME/CMD/uptime  2> /dev/null
 vmstat 1> $HOSTNAME/CMD/vmstat  2> /dev/null
 w 1> $HOSTNAME/CMD/w  2> /dev/null
@@ -429,18 +455,35 @@ showrev -a 1> $HOSTNAME/CMD/showrev-a  2> /dev/null  # Installed Patch All Revis
 showrev -p 1> $HOSTNAME/CMD/shovrev-p  2> /dev/null  # Installed Patch Revision Information (Solaris)
 smpatch analyze 1> $HOSTNAME/CMD/smpatch  2> /dev/null  # Patches installed (Solaris)
 /sbin/bootadm list-menu 1> $HOSTNAME/CMD/bootadm  2> /dev/null  # Grub Password set
+/usr/sbin/consadm -p 1> $HOSTNAME/CMD/consadm-p  2> /dev/null  # Display auxiliary consoles
+coreadm 1> $HOSTNAME/CMD/coreadm  2> /dev/null  # Managing core files
 eeprom 1> $HOSTNAME/CMD/eeprom  2> /dev/null  # Electrically Erasable Programmable Read Only Memory Parameters
+inetadm 1> $HOSTNAME/CMD/inetadm  2> /dev/null  # Observing and managing inetd services
+ipadm 1> $HOSTNAME/CMD/ipadm  2> /dev/null  # Observing and managing IP interfaces
+logins -d 1> $HOSTNAME/CMD/login-p  2> /dev/null  # Duplicate uids
+logins -p 1> $HOSTNAME/CMD/login-p  2> /dev/null  # logins with no passwords
+logins -s 1> $HOSTNAME/CMD/login-s  2> /dev/null  # All System logins
+logins -aox 1> $HOSTNAME/CMD/login-aox  2> /dev/null  # Extended info (x) on 1 line (o) with expiration (a) 
 modinfo 1> $HOSTNAME/CMD/modinfo  2> /dev/null  # Loaded Kernel Modules
-prtdiag -v 1> $HOSTNAME/CMD/prtdiag-v  2> /dev/null
-prtpicl -v 1> $HOSTNAME/CMD/prtpicl-v  2> /dev/null
-prtconf -v 1> $HOSTNAME/CMD/prtconf-v  2> /dev/null  # PCI cards/USB Peripherials accessible
-prtconf -D 1> $HOSTNAME/CMD/prtconf-D  2> /dev/null
-psrinfo 1> $HOSTNAME/CMD/psrinfo  2> /dev/null
+poweradm -v list 1> $HOSTNAME/CMD/poweradm-v_list  2> /dev/null  # Power management properties list
+poweradm show 1> $HOSTNAME/CMD/poweradm_show  2> /dev/null  # Power management properties show
+prtdiag -v 1> $HOSTNAME/CMD/prtdiag-v  2> /dev/null  # Verbose Diagnostic/Configuration
+prtpicl -v 1> $HOSTNAME/CMD/prtpicl-v  2> /dev/null  # Verbose PICL tree
+prtconf -v 1> $HOSTNAME/CMD/prtconf-v  2> /dev/null  # Verbose info (PCI cards/USB Peripherials accessible)
+prtconf -D 1> $HOSTNAME/CMD/prtconf-D  2> /dev/null  # System Configuration
+psrinfo 1> $HOSTNAME/CMD/psrinfo  2> /dev/null  # Processor Information
+routeadm 1> $HOSTNAME/CMD/routeadm  2> /dev/null  # Observing routing properties
+routeadm -p 1> $HOSTNAME/CMD/routeadm -p  2> /dev/null  # Observing routing properties
 share -A 1> $HOSTNAME/CMD/share-A  2> /dev/null  # NFS Shares
 swap -l 1>  $HOSTNAME/CMD/swap-l  2> /dev/null  # Display swap
 swap -s 1>  $HOSTNAME/CMD/swap-s  2> /dev/null  # Display swap
 svcs 1> $HOSTNAME/CMD/svcs  2> /dev/null  # Services (Solaris)
-sxadm info  2> /dev/null  # Stack Randomisation (Solaris)
+svcs -a 1> $HOSTNAME/CMD/svcs-a  2> /dev/null  # All Services (Solaris)
+svcs -d 1> $HOSTNAME/CMD/svcs-d  2> /dev/null  # Services and instances (Solaris)
+svcs -D 1> $HOSTNAME/CMD/svcs-D  2> /dev/null  # Service instances (Solaris)
+svcs -l 1> $HOSTNAME/CMD/svcs-l  2> /dev/null  # All information Service instances (Solaris)
+sxadm info 1> $HOSTNAME/CMD/sxadm_info  2> /dev/null  # Stack Randomisation (Solaris)
+useradd -D 1>  $HOSTNAME/CMD/useradd-D  2> /dev/null # Display default values for group, base_dir, skel_dir, shell, inactive, and expire
 zoneadm list 1> $HOSTNAME/CMD/zoneadm  2> /dev/null  # Zones
 
 # ndd - Device Parameters (Solaris)
@@ -466,6 +509,13 @@ done
 fi
 # Solaris commands. Done
 echo "Specific Solaris commands: Done"
+
+## Alpine
+apk info -v 1> $HOSTNAME/CMD/apk-info-v  2> /dev/null 
+apk info -vv 1> $HOSTNAME/CMD/apk-info-vv  2> /dev/null 
+apk search -v 1> $HOSTNAME/CMD/apk-search-v  2> /dev/null 
+
+echo "Specific Alpine commands: Done"
 
 ## FreeBSD
 /usr/sbin/pkg_info 1> $HOSTNAME/CMD/patchlist-FreeBSD  2> /dev/null 
@@ -500,6 +550,13 @@ done
 # HPUX commands. Done
 echo "Specific HPUX commands: Done"
 
+## Redhat/CentOS
+subscription-manager identity 1> $HOSTNAME/CMD/subscription-manager  2> /dev/null
+yum repolist 1> $HOSTNAME/CMD/yum_repolist  2> /dev/null
+yum repolist all 1> $HOSTNAME/CMD/yum_repolist_all  2> /dev/null
+yum check-update 1> $HOSTNAME/CMD/yum_check-update  2> /dev/null
+echo "Specific Redhat/CentOS commands: Done"
+
 ## SCO
 customquery swconfig 1> $HOSTNAME/CMD/customquery-swconfig 2> /dev/null
 displaypkg 1> $HOSTNAME/CMD/displaypkg 2> /dev/null
@@ -512,6 +569,11 @@ echo "Specific SCO commands: Done"
 ls -1 /var/log/packages 1> $HOSTNAME/CMD/patchlist-slackware  2> /dev/null
 # Slackware commands. Done
 echo "Specific Slackware commands: Done"
+
+## SuSE
+zypper repos 1> $HOSTNAME/CMD/zypper_repos  2> /dev/null
+zypper list-updates 1> $HOSTNAME/CMD/zypper_list-updates  2> /dev/null
+echo "Specific SuSE commands: Done"
 
 }
 
