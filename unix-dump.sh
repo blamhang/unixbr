@@ -357,7 +357,7 @@ netstat -rn 1> $HOSTNAME/CMD/netstat-rn  2> /dev/null
 netstat -tulpn 1> $HOSTNAME/CMD/netstat-tulpn  2> /dev/null
 nfsstat 1> $HOSTNAME/CMD/nfsstat  2> /dev/null
 ntpq -p 1> $HOSTNAME/CMD/ntpq-p  2> /dev/null
-passwd -a -s 1> $HOSTNAME/CMD/passwd-a-s  2> /dev/null  # Password Status
+# passwd -a -s 1> $HOSTNAME/CMD/passwd-a-s  2> /dev/null  # AIX trips up, expecting user input.
 passwd -a -S 1> $HOSTNAME/CMD/passwd-a-S  2> /dev/null
 pwck 1> $HOSTNAME/CMD/pwck  2> /dev/null
 ping -c 5 www.google.co.uk 1> $HOSTNAME/CMD/ping-google  2> /dev/null
@@ -394,7 +394,7 @@ sysctl kernel 1> $HOSTNAME/CMD/sysctl-kernel  2> /dev/null
 sysctl kernel.modules_disabled 1> $HOSTNAME/CMD/sysctl-kernel1  2> /dev/null
 sysctl kernel.randomize_va_space >> $HOSTNAME/CMD/sysctl-kernel1  2> /dev/null
 systemctl --no-pager 1> $HOSTNAME/CMD/systemctl  2> /dev/null
-systemctl --no-pager -a 1> $HOSTNAME/CMD/systemctl -a  2> /dev/null
+systemctl --no-pager -a 1> $HOSTNAME/CMD/systemctl-a  2> /dev/null
 systemctl is-enabled aidcheck.service 1> $HOSTNAME/CMD/systemctl_aidcheck  2> /dev/null
 systemctl status aidcheck.service >> $HOSTNAME/CMD/systemctl_aidcheck  2> /dev/null
 systemctl is-enabled aidcheck.timer >> $HOSTNAME/CMD/systemctl_aidcheck  2> /dev/null
@@ -510,11 +510,15 @@ fi
 # Solaris commands. Done
 echo "Specific Solaris commands: Done"
 
+## Arch
+arch 1> $HOSTNAME/CMD/pacman-Q  2> /dev/null
+pacman -Q 1> $HOSTNAME/CMD/pacman-Q  2> /dev/null
+echo "Specific Arch commands: Done"
+
 ## Alpine
 apk info -v 1> $HOSTNAME/CMD/apk-info-v  2> /dev/null 
 apk info -vv 1> $HOSTNAME/CMD/apk-info-vv  2> /dev/null 
 apk search -v 1> $HOSTNAME/CMD/apk-search-v  2> /dev/null 
-
 echo "Specific Alpine commands: Done"
 
 ## FreeBSD
@@ -571,7 +575,9 @@ ls -1 /var/log/packages 1> $HOSTNAME/CMD/patchlist-slackware  2> /dev/null
 echo "Specific Slackware commands: Done"
 
 ## SuSE
+zypper packages 1> $HOSTNAME/CMD/zypper_packages  2> /dev/null
 zypper repos 1> $HOSTNAME/CMD/zypper_repos  2> /dev/null
+zypper se --installed-only 1> $HOSTNAME/CMD/zypper_installed-only  2> /dev/null
 zypper list-updates 1> $HOSTNAME/CMD/zypper_list-updates  2> /dev/null
 echo "Specific SuSE commands: Done"
 
@@ -729,6 +735,32 @@ fi
 
 }
 
+## getLocalFind()
+## Add $LOCALFIND parameter based on $PLATFORM
+## Shell script hate \( with find. It messes up predicates.
+getLocalFind() {
+if [ "$PLATFORM" = "Ubuntu" -o "$PLATFORM" = "Redhat" -o "$PLATFORM" = "Debian" -o "$PLATFORM" = "Linux" ]; then
+   # GNU Find: http://man7.org/linux/man-pages/man1/find.1.html
+   LOCALFIND="-xdev -path /proc -prune -o -path /sys -prune -o -path /srv -prune -o "
+elif [ "$PLATFORM" = "SCO" ]; then
+   # https://osr507doc.xinuos.com/en/OSTut/Searching_for_a_file.html
+   LOCALFIND="-mount -path /proc -prune -o -path /sys -prune -o -path /srv -prune -o "
+elif [ "$PLATFORM" = "Solaris" -o "$PLATFORM" = "HP-UX" ]; then
+   # https://docs.oracle.com/cd/E26502_01/html/E29030/find-1.html
+   # https://nixdoc.net/man-pages/HP-UX/man1/find.1.html
+   LOCALFIND="-local -xdev -path /proc -prune -o -path /sys -prune -o -path /srv -prune -o "
+elif [ "$PLATFORM" = "FreeBSD" ]; then
+   # https://www.freebsd.org/cgi/man.cgi?find(1)
+   LOCALFIND="-fstype local -path /proc -prune -o -path /sys -prune -o -path /srv -prune -o "
+elif [ "$PLATFORM" = "AIX" ]; then
+   # https://www.ibm.com/support/knowledgecenter/en/ssw_aix_71/f_commands/find.html
+   # LOCALFIND="-fstype jfs -o -fstype jfs2 -xdev -path /proc -prune -o -path /sys -prune "
+   LOCALFIND="-fstype jfs -xdev -path /proc -prune -o -path /sys -prune -o -path /srv -prune -o "
+else
+   LOCALFIND="-xdev -path /proc -prune -o -path /sys -prune -o -path /srv -prune -o "
+fi
+}
+
 
 ## startup()
 ## Initialise directory
@@ -835,7 +867,7 @@ HOSTNAME=$(hostname)
 WHOAMI=$(whoami)
 TARBALL="unixdump-$HOSTNAME-$WHOAMI.tar"
 TARZIP="$TARBALL.gz"
-VERSION="0.00a"
+VERSION="0.01"
 PLATFORM=""
 LOCALFIND=""
 DETAILED=0
@@ -857,8 +889,7 @@ while [ "$1" != "" ]; do
       -o | --output )       shift
                             HOSTNAME=$1
                             ;;
-				# Try: -fstype local 
-      -l | --localfind )    LOCALFIND="-fstype jfs "
+      -l | --localfind )    getLocalFind
                             ;;
       -v | --version )      echo "$0 v$VERSION"
                             exit
