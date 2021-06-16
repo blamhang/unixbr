@@ -17,6 +17,9 @@
 # - Implement option for find on local FS (default includes mounted systems)
 # - Better support for finding configuration for Oracle, Apache, Tomcat.
 #
+# 0.01	Original Version
+# 0.02	Update to include "combo" commands (e.g. chage --list for all users)
+#	This is to cater for CIS benchmark
 # Reference:
 # https://unix4admins.blogspot.com/2013/03/unix-commands-comparison-sheet.html
 ################################################################################
@@ -414,6 +417,25 @@ echo $PATH 1> $HOSTNAME/CMD/path  2> /dev/null
 echo $TMOUT 1> $HOSTNAME/CMD/tmout  2> /dev/null
 # Generic UNIX commands. Done
 echo "Generic UNIX commands: Done"
+
+# Combo UNIX commands (for CIS Benchmark)
+# 5.4.1.5 Ensure all users last password change date is in the past (Scored)
+# Get Last Password Change (chage --list) for each user
+for usr in $(cut -d: -f1 /etc/shadow); do echo "$usr :$(chage --list $usr | grep '^Last password change' | cut -d: -f2)"; done 1> $HOSTNAME/CMD/combo-chage-lastpassword  2> /dev/null
+# Get any user with future last password change
+for usr in $(cut -d: -f1 /etc/shadow); do [[ $(chage --list $usr | grep '^Last password change' | cut -d: -f2) > $(date) ]] && echo "$usr :$(chage --list $usr | grep '^Last password change' | cut -d: -f2)"; done 1> $HOSTNAME/CMD/combo-chage-futurepassword 2> /dev/null
+
+# 5.4.2 Ensure system accounts are secured (Scored)
+# System account less than User ID (uid=1000), check starting program is nologin/false 
+awk -F: '($1!="root" && $1!="sync" && $1!="shutdown" && $1!="halt" && $1!~/^\+/ && $3<'"$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs)"' && $7!="'"$(which nologin)"'" && $7!="/bin/false") {print}' /etc/passwd 1> $HOSTNAME/CMD/combo-passwd-startprograms 2> /dev/null
+which nologin 1> $HOSTNAME/CMD/which-nologin 2> /dev/null
+# System accounts that are not locked
+awk -F: '($1!="root" && $1!~/^\+/ && $3<'"$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs)"') {print $1}' /etc/passwd | xargs -I '{}' passwd -S '{}' | awk '($2!="L" && $2!="LK") {print $1}' 1> $HOSTNAME/CMD/combo-passwd-S-unlocked 2> /dev/null
+# Passwd -S flags for System accounts
+awk -F: '($1!="root" && $1!~/^\+/ && $3<'"$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs)"') {print $1}' /etc/passwd | xargs -I '{}' passwd -S '{}' | awk '{print $1":"$2}' 1> $HOSTNAME/CMD/combo-passwd-S 2> /dev/null
+
+echo "Generic Combo commands: Done"
+
 
 ## AIX
 bootinfo 1> $HOSTNAME/CMD/bootinfo  2> /dev/null  # Display boot info
@@ -867,7 +889,7 @@ HOSTNAME=$(hostname)
 WHOAMI=$(whoami)
 TARBALL="unixdump-$HOSTNAME-$WHOAMI.tar"
 TARZIP="$TARBALL.gz"
-VERSION="0.01"
+VERSION="0.02"
 PLATFORM=""
 LOCALFIND=""
 DETAILED=0
